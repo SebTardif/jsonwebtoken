@@ -10,7 +10,7 @@
 //! [`CryptoProvider`]: crate::crypto::CryptoProvider
 
 use crate::algorithms::Algorithm;
-use crate::errors::{ErrorKind, Result};
+use crate::errors::{ErrorKind, Result, new_error};
 use crate::jwk::{EllipticCurve, ThumbprintHash};
 use crate::{DecodingKey, EncodingKey};
 
@@ -76,7 +76,12 @@ pub fn verify(
 /// - [`crypto::rust_crypto::DEFAULT_PROVIDER`]: (behind the `rust_crypto` crate feature)
 ///   This provider uses crates from the [Rust Crypto](https://github.com/RustCrypto) project.
 ///
-/// or provide your own custom custom implementation of `CryptoProvider`.
+/// or provide your own custom implementation of `CryptoProvider`.
+///
+/// If both `aws_lc_rs` and `rust_crypto` are enabled, `aws_lc_rs` is the
+/// automatic process default. If neither is enabled and
+/// [`CryptoProvider::install_default`] has not been called, encode/decode
+/// return [`crate::errors::ErrorKind::MissingCryptoProvider`] instead of panicking.
 // This implementation appropriates a good chunk of code from the `rustls` CryptoProvider,
 // and is very much inspired by it.
 #[derive(Clone, Debug)]
@@ -102,6 +107,12 @@ impl CryptoProvider {
     }
 
     fn from_crate_features() -> &'static Self {
+        // rustls-style: when both built-in backends are compiled in, prefer aws-lc-rs.
+        #[cfg(all(feature = "aws_lc_rs", feature = "rust_crypto"))]
+        {
+            return &aws_lc::DEFAULT_PROVIDER;
+        }
+
         #[cfg(all(feature = "rust_crypto", not(feature = "aws_lc_rs")))]
         {
             return &rust_crypto::DEFAULT_PROVIDER;
@@ -114,15 +125,9 @@ impl CryptoProvider {
 
         #[allow(unreachable_code)]
         {
-            const NOT_INSTALLED_ERROR: &str = r"
-Could not automatically determine the process-level CryptoProvider from jsonwebtoken crate features.
-Call CryptoProvider::install_default() before this point to select a provider manually, or make sure exactly one of the 'rust_crypto' and 'aws_lc_rs' features is enabled.
-See the documentation of the CryptoProvider type for more information.
-";
-
             static INSTANCE: CryptoProvider = CryptoProvider {
-                signer_factory: |_, _| panic!("{}", NOT_INSTALLED_ERROR),
-                verifier_factory: |_, _| panic!("{}", NOT_INSTALLED_ERROR),
+                signer_factory: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
+                verifier_factory: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
                 key_utils: KeyUtils::new_unimplemented(),
             };
 
@@ -154,27 +159,22 @@ pub struct KeyUtils {
 
 impl KeyUtils {
     /// Initialises all values to dummies.
-    /// Will lead to a panic when JWKs are required, so only use it if you don't want to support JWKs.
+    /// Returns [`crate::errors::ErrorKind::MissingCryptoProvider`] when JWKs are required.
     pub const fn new_unimplemented() -> Self {
-        const NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR: &str = r"
-Could not automatically determine the process-level CryptoProvider from jsonwebtoken crate features, or your CryptoProvider does not support JWKs.
-Call CryptoProvider::install_default() before this point to select a provider manually, or make sure exactly one of the 'rust_crypto' and 'aws_lc_rs' features is enabled.
-See the documentation of the CryptoProvider type for more information.
-";
         Self {
             rsa_pub_components_from_private_key: |_| {
-                panic!("{}", NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR)
+                Err(new_error(ErrorKind::MissingCryptoProvider))
             },
             rsa_pub_components_from_public_key: |_| {
-                panic!("{}", NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR)
+                Err(new_error(ErrorKind::MissingCryptoProvider))
             },
             ec_pub_components_from_private_key: |_, _| {
-                panic!("{}", NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR)
+                Err(new_error(ErrorKind::MissingCryptoProvider))
             },
             ed_pub_components_from_private_key: |_, _| {
-                panic!("{}", NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR)
+                Err(new_error(ErrorKind::MissingCryptoProvider))
             },
-            compute_digest: |_, _| panic!("{}", NOT_INSTALLED_OR_UNIMPLEMENTED_ERROR),
+            compute_digest: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
         }
     }
 }

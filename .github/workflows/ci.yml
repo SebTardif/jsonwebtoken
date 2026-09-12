@@ -64,6 +64,14 @@ jobs:
             -   name: Run tests no features
                 run: cargo test --no-default-features --features ${{ matrix.backend }}
 
+            -   name: Run tests both backends
+                if: matrix.build == 'stable' && matrix.backend == 'aws_lc_rs'
+                run: cargo test --features aws_lc_rs,rust_crypto --test both_backends
+
+            -   name: Run tests no crypto backend
+                if: matrix.build == 'stable' && matrix.backend == 'aws_lc_rs'
+                run: cargo test --no-default-features --test missing_provider
+
     wasm:
         name: Run tests in wasm
         runs-on: ubuntu-latest

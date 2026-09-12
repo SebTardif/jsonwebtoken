@@ -77,6 +77,9 @@ pub enum ErrorKind {
     InvalidAlgorithm,
     /// When the Validation struct does not contain at least 1 algorithm
     MissingAlgorithm,
+    /// No process-level [`crate::crypto::CryptoProvider`] is installed and
+    /// crate features did not select a built-in backend
+    MissingCryptoProvider,
 
     // 3rd party errors
     /// An error happened when decoding some base64 text
@@ -111,6 +114,7 @@ impl StdError for Error {
             ErrorKind::UnsupportedAlgorithm => None,
             ErrorKind::InvalidAlgorithmName => None,
             ErrorKind::InvalidKeyFormat => None,
+            ErrorKind::MissingCryptoProvider => None,
             ErrorKind::Base64(err) => Some(err),
             ErrorKind::Json(err) => Some(err.as_ref()),
             ErrorKind::Utf8(err) => Some(err),
@@ -136,7 +140,8 @@ impl fmt::Display for Error {
             | ErrorKind::UnsupportedAlgorithm
             | ErrorKind::InvalidKeyFormat
             | ErrorKind::InvalidEddsaKey
-            | ErrorKind::InvalidAlgorithmName => write!(f, "{:?}", self.0),
+            | ErrorKind::InvalidAlgorithmName
+            | ErrorKind::MissingCryptoProvider => write!(f, "{:?}", self.0),
             ErrorKind::MissingRequiredClaim(c) => write!(f, "Missing required claim: {}", c),
             ErrorKind::InvalidClaimFormat(c) => write!(f, "Invalid format for claim: {}", c),
             ErrorKind::InvalidRsaKey(msg) => write!(f, "RSA key invalid: {}", msg),

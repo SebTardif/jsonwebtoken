@@ -8,14 +8,15 @@ See [JSON Web Tokens](https://en.wikipedia.org/wiki/JSON_Web_Token) for more inf
 Add the following to Cargo.toml:
 
 ```toml
-# You will have to select either `aws_lc_rs` or `rust_crypto` as backend if you're not using your own
+# Select a built-in backend if you are not installing your own CryptoProvider.
+# Prefer aws_lc_rs: rust_crypto still depends on the rsa crate (RUSTSEC-2023-0071).
 jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 # If you do not need pem decoding, you can disable the default feature `use_pem` that way:
 # jsonwebtoken = {version = "11", default-features = false, features = ["aws_lc_rs"] }
 serde = {version = "1.0", features = ["derive"] }
 ```
 
-Two crypto backends are available via features, `aws_lc_rs` and `rust_crypto`, at most one of which must be enabled. If you select neither feature, you need to provide your own `CryptoProvider`.
+Two crypto backends are available via features, `aws_lc_rs` and `rust_crypto`. Enable one of them, or call `CryptoProvider::install_default` with your own provider. If both features are enabled, `aws_lc_rs` is the automatic process default. If neither is enabled and no provider is installed, encode/decode return an error.
 
 For examples of how to implement a `CryptoProvider`, see
 - [arckoor/jsonwebtoken-providers](https://github.com/arckoor/jsonwebtoken-providers)

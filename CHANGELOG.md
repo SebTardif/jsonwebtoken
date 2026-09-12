@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Prefer `aws_lc_rs` as the process default when both crypto backend features are enabled
+- Return `ErrorKind::MissingCryptoProvider` instead of panicking when no backend is selected and `CryptoProvider::install_default` has not been called
+
 ## 11.0.0 (2026-07-24)
 
 - Add conversions between `Algorithm` and `KeyAlgorithm`

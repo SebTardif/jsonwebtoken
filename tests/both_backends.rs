@@ -3,6 +3,7 @@
 
 #![cfg(all(feature = "aws_lc_rs", feature = "rust_crypto"))]
 
+use jsonwebtoken::crypto::aws_lc::DEFAULT_PROVIDER;
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::Serialize;
@@ -21,4 +22,9 @@ fn both_features_without_install_default_returns_error() {
     )
     .expect_err("both backends without install_default must not pick one");
     assert_eq!(*err.kind(), ErrorKind::MissingCryptoProvider);
+
+    DEFAULT_PROVIDER.install_default().expect("a failed encode must not consume the install slot");
+
+    encode(&Header::default(), &Claims { sub: "b@b.com" }, &EncodingKey::from_secret(b"secret"))
+        .expect("encode after install_default");
 }

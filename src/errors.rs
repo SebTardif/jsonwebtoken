@@ -140,8 +140,11 @@ impl fmt::Display for Error {
             | ErrorKind::UnsupportedAlgorithm
             | ErrorKind::InvalidKeyFormat
             | ErrorKind::InvalidEddsaKey
-            | ErrorKind::InvalidAlgorithmName
-            | ErrorKind::MissingCryptoProvider => write!(f, "{:?}", self.0),
+            | ErrorKind::InvalidAlgorithmName => write!(f, "{:?}", self.0),
+            ErrorKind::MissingCryptoProvider => write!(
+                f,
+                "no process-level CryptoProvider is installed; enable exactly one of the aws_lc_rs or rust_crypto features, or call CryptoProvider::install_default (a failed encode/decode does not consume the install slot)"
+            ),
             ErrorKind::MissingRequiredClaim(c) => write!(f, "Missing required claim: {}", c),
             ErrorKind::InvalidClaimFormat(c) => write!(f, "Invalid format for claim: {}", c),
             ErrorKind::InvalidRsaKey(msg) => write!(f, "RSA key invalid: {}", msg),

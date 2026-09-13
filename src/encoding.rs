@@ -153,7 +153,7 @@ pub fn encode<T: Serialize>(header: &Header, claims: &T, key: &EncodingKey) -> R
         return Err(new_error(ErrorKind::InvalidAlgorithm));
     }
 
-    let signing_provider = (CryptoProvider::get_default().signer_factory)(&header.alg, key)?;
+    let signing_provider = (CryptoProvider::get_default()?.signer_factory)(&header.alg, key)?;
 
     if signing_provider.algorithm() != header.alg {
         return Err(new_error(ErrorKind::InvalidAlgorithm));

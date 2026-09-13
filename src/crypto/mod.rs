@@ -46,7 +46,7 @@ pub trait JwtVerifier: Verifier<Vec<u8>> {
 ///
 /// If you just want to encode a JWT, use `encode` instead.
 pub fn sign(message: &[u8], key: &EncodingKey, algorithm: Algorithm) -> Result<String> {
-    let provider = (CryptoProvider::get_default().signer_factory)(&algorithm, key)?;
+    let provider = (CryptoProvider::get_default()?.signer_factory)(&algorithm, key)?;
     Ok(b64_encode(provider.try_sign(message)?))
 }
 
@@ -64,7 +64,7 @@ pub fn verify(
     key: &DecodingKey,
     algorithm: Algorithm,
 ) -> Result<bool> {
-    let provider = (CryptoProvider::get_default().verifier_factory)(&algorithm, key)?;
+    let provider = (CryptoProvider::get_default()?.verifier_factory)(&algorithm, key)?;
     Ok(provider.verify(message, &b64_decode(signature)?).is_ok())
 }
 
@@ -81,7 +81,9 @@ pub fn verify(
 /// If exactly one of `aws_lc_rs` and `rust_crypto` is enabled, that backend
 /// is the automatic process default. If both or neither is enabled and
 /// [`CryptoProvider::install_default`] has not been called, encode/decode
-/// return [`crate::errors::ErrorKind::MissingCryptoProvider`].
+/// return [`crate::errors::ErrorKind::MissingCryptoProvider`]. A miss does
+/// not install a dummy provider and does not prevent a later
+/// [`CryptoProvider::install_default`].
 // This implementation appropriates a good chunk of code from the `rustls` CryptoProvider,
 // and is very much inspired by it.
 #[derive(Clone, Debug)]
@@ -102,31 +104,23 @@ impl CryptoProvider {
         static_default::install_default(self)
     }
 
-    pub(crate) fn get_default() -> &'static Self {
+    pub(crate) fn get_default() -> Result<&'static Self> {
         static_default::get_default()
     }
 
-    fn from_crate_features() -> &'static Self {
+    fn from_crate_features() -> Option<&'static Self> {
         #[cfg(all(feature = "rust_crypto", not(feature = "aws_lc_rs")))]
         {
-            return &rust_crypto::DEFAULT_PROVIDER;
+            return Some(&rust_crypto::DEFAULT_PROVIDER);
         }
 
         #[cfg(all(feature = "aws_lc_rs", not(feature = "rust_crypto")))]
         {
-            return &aws_lc::DEFAULT_PROVIDER;
+            return Some(&aws_lc::DEFAULT_PROVIDER);
         }
 
         #[allow(unreachable_code)]
-        {
-            static INSTANCE: CryptoProvider = CryptoProvider {
-                signer_factory: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
-                verifier_factory: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
-                key_utils: KeyUtils::new_unimplemented(),
-            };
-
-            &INSTANCE
-        }
+        None
     }
 }
 
@@ -217,7 +211,13 @@ mod static_default {
         PROCESS_DEFAULT_PROVIDER.set(default_provider)
     }
 
-    pub(crate) fn get_default() -> &'static CryptoProvider {
-        PROCESS_DEFAULT_PROVIDER.get_or_init(CryptoProvider::from_crate_features)
+    pub(crate) fn get_default() -> crate::errors::Result<&'static CryptoProvider> {
+        if let Some(provider) = PROCESS_DEFAULT_PROVIDER.get() {
+            return Ok(*provider);
+        }
+        match CryptoProvider::from_crate_features() {
+            Some(provider) => Ok(*PROCESS_DEFAULT_PROVIDER.get_or_init(|| provider)),
+            None => Err(crate::errors::new_error(crate::errors::ErrorKind::MissingCryptoProvider)),
+        }
     }
 }

@@ -16,7 +16,7 @@ jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 serde = {version = "1.0", features = ["derive"] }
 ```
 
-Two crypto backends are available via features, `aws_lc_rs` and `rust_crypto`. Enable exactly one of them, or call `CryptoProvider::install_default` with your own provider. If both features or neither is enabled and no provider is installed, encode/decode return an error.
+Two crypto backends are available via features, `aws_lc_rs` and `rust_crypto`. Enable exactly one of them, or call `CryptoProvider::install_default` with your own provider. If both features or neither is enabled and no provider is installed, encode/decode return an error. A failed encode/decode does not install a dummy and does not prevent a later `install_default`.
 
 For examples of how to implement a `CryptoProvider`, see
 - [arckoor/jsonwebtoken-providers](https://github.com/arckoor/jsonwebtoken-providers)

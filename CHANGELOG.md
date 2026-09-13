@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Return `ErrorKind::MissingCryptoProvider` instead of panicking when no single backend is selected (neither feature, or both) and `CryptoProvider::install_default` has not been called
+- A failed encode/decode in that case does not install a dummy provider, so `install_default` still works afterwards
 - `KeyUtils::new_unimplemented` now returns `ErrorKind::Provider` instead of panicking when JWKs are required
 
 ## 11.0.0 (2026-07-24)

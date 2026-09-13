@@ -279,7 +279,7 @@ pub fn decode<T: DeserializeOwned>(
         return Err(new_error(ErrorKind::InvalidAlgorithm));
     }
 
-    let verifying_provider = (CryptoProvider::get_default().verifier_factory)(&header.alg, key)?;
+    let verifying_provider = (CryptoProvider::get_default()?.verifier_factory)(&header.alg, key)?;
 
     let (header, claims) = verify_signature(token, validation, verifying_provider)?;
 

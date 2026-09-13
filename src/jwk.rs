@@ -501,7 +501,7 @@ impl Jwk {
                     value: b64_encode(key.as_bytes()),
                 }),
                 AlgorithmFamily::Rsa => {
-                    let (n, e) = (CryptoProvider::get_default()
+                    let (n, e) = (CryptoProvider::get_default()?
                         .key_utils
                         .rsa_pub_components_from_private_key)(
                         key.as_bytes()
@@ -513,7 +513,7 @@ impl Jwk {
                     })
                 }
                 AlgorithmFamily::Ec => {
-                    let (curve, x, y) = (CryptoProvider::get_default()
+                    let (curve, x, y) = (CryptoProvider::get_default()?
                         .key_utils
                         .ec_pub_components_from_private_key)(
                         key.as_bytes(), alg
@@ -535,7 +535,7 @@ impl Jwk {
                     }?;
 
                     // Extract the public key from the encoding key
-                    let public_key_bytes = (CryptoProvider::get_default()
+                    let public_key_bytes = (CryptoProvider::get_default()?
                         .key_utils
                         .ed_pub_components_from_private_key)(
                         key.as_bytes(), &curve_type
@@ -571,7 +571,7 @@ impl Jwk {
                             (b64_encode(n), b64_encode(e))
                         }
                         DecodingKeyKind::SecretOrDer(der) => {
-                            let (n, e) = (CryptoProvider::get_default()
+                            let (n, e) = (CryptoProvider::get_default()?
                                 .key_utils
                                 .rsa_pub_components_from_public_key)(
                                 der
@@ -659,7 +659,7 @@ impl Jwk {
             AlgorithmParameters::Other(_) => return Err(ErrorKind::UnsupportedAlgorithm.into()),
         };
 
-        Ok(b64_encode((CryptoProvider::get_default().key_utils.compute_digest)(
+        Ok(b64_encode((CryptoProvider::get_default()?.key_utils.compute_digest)(
             pre.as_bytes(),
             hash_function,
         )?))

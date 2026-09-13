@@ -3,25 +3,22 @@
 
 #![cfg(all(feature = "aws_lc_rs", feature = "rust_crypto"))]
 
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use serde::{Deserialize, Serialize};
+use jsonwebtoken::errors::ErrorKind;
+use jsonwebtoken::{EncodingKey, Header, encode};
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Serialize)]
 struct Claims {
-    sub: String,
-    exp: i64,
+    sub: &'static str,
 }
 
 #[test]
-fn both_features_select_aws_lc_rs_without_install_default() {
-    let claims = Claims { sub: "b@b.com".to_string(), exp: 9_999_999_999 };
-    let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(b"secret"))
-        .expect("both backends should default to aws_lc_rs");
-    let decoded = decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(b"secret"),
-        &Validation::new(jsonwebtoken::Algorithm::HS256),
+fn both_features_without_install_default_returns_error() {
+    let err = encode(
+        &Header::default(),
+        &Claims { sub: "b@b.com" },
+        &EncodingKey::from_secret(b"secret"),
     )
-    .expect("round-trip with the automatic default");
-    assert_eq!(decoded.claims, claims);
+    .expect_err("both backends without install_default must not pick one");
+    assert_eq!(*err.kind(), ErrorKind::MissingCryptoProvider);
 }

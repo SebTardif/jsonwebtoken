@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Prefer `aws_lc_rs` as the process default when both crypto backend features are enabled
-- Return `ErrorKind::MissingCryptoProvider` instead of panicking when no backend is selected and `CryptoProvider::install_default` has not been called
+- Return `ErrorKind::MissingCryptoProvider` instead of panicking when no single backend is selected (neither feature, or both) and `CryptoProvider::install_default` has not been called
+- `KeyUtils::new_unimplemented` now returns `ErrorKind::Provider` instead of panicking when JWKs are required
 
 ## 11.0.0 (2026-07-24)
 

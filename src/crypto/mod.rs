@@ -78,10 +78,10 @@ pub fn verify(
 ///
 /// or provide your own custom implementation of `CryptoProvider`.
 ///
-/// If both `aws_lc_rs` and `rust_crypto` are enabled, `aws_lc_rs` is the
-/// automatic process default. If neither is enabled and
+/// If exactly one of `aws_lc_rs` and `rust_crypto` is enabled, that backend
+/// is the automatic process default. If both or neither is enabled and
 /// [`CryptoProvider::install_default`] has not been called, encode/decode
-/// return [`crate::errors::ErrorKind::MissingCryptoProvider`] instead of panicking.
+/// return [`crate::errors::ErrorKind::MissingCryptoProvider`].
 // This implementation appropriates a good chunk of code from the `rustls` CryptoProvider,
 // and is very much inspired by it.
 #[derive(Clone, Debug)]
@@ -107,12 +107,6 @@ impl CryptoProvider {
     }
 
     fn from_crate_features() -> &'static Self {
-        // rustls-style: when both built-in backends are compiled in, prefer aws-lc-rs.
-        #[cfg(all(feature = "aws_lc_rs", feature = "rust_crypto"))]
-        {
-            return &aws_lc::DEFAULT_PROVIDER;
-        }
-
         #[cfg(all(feature = "rust_crypto", not(feature = "aws_lc_rs")))]
         {
             return &rust_crypto::DEFAULT_PROVIDER;
@@ -159,22 +153,34 @@ pub struct KeyUtils {
 
 impl KeyUtils {
     /// Initialises all values to dummies.
-    /// Returns [`crate::errors::ErrorKind::MissingCryptoProvider`] when JWKs are required.
+    /// Returns [`crate::errors::ErrorKind::Provider`] when JWKs are required.
     pub const fn new_unimplemented() -> Self {
         Self {
             rsa_pub_components_from_private_key: |_| {
-                Err(new_error(ErrorKind::MissingCryptoProvider))
+                Err(new_error(ErrorKind::Provider(
+                    "this CryptoProvider does not implement JWKs".to_string(),
+                )))
             },
             rsa_pub_components_from_public_key: |_| {
-                Err(new_error(ErrorKind::MissingCryptoProvider))
+                Err(new_error(ErrorKind::Provider(
+                    "this CryptoProvider does not implement JWKs".to_string(),
+                )))
             },
             ec_pub_components_from_private_key: |_, _| {
-                Err(new_error(ErrorKind::MissingCryptoProvider))
+                Err(new_error(ErrorKind::Provider(
+                    "this CryptoProvider does not implement JWKs".to_string(),
+                )))
             },
             ed_pub_components_from_private_key: |_, _| {
-                Err(new_error(ErrorKind::MissingCryptoProvider))
+                Err(new_error(ErrorKind::Provider(
+                    "this CryptoProvider does not implement JWKs".to_string(),
+                )))
             },
-            compute_digest: |_, _| Err(new_error(ErrorKind::MissingCryptoProvider)),
+            compute_digest: |_, _| {
+                Err(new_error(ErrorKind::Provider(
+                    "this CryptoProvider does not implement JWKs".to_string(),
+                )))
+            },
         }
     }
 }
